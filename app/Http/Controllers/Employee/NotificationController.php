@@ -1,0 +1,56 @@
+<?php
+// app/Http/Controllers/Employee/NotificationController.php
+
+namespace App\Http\Controllers\Employee;
+
+use App\Http\Controllers\Controller;
+use App\Models\Notification;
+use Illuminate\Support\Facades\Auth;
+
+class NotificationController extends Controller
+{
+    /**
+     * Display a listing of personal notifications.
+     */
+    public function index()
+    {
+        $employee = Auth::user();
+        $notifications = Notification::where('employee_id', $employee->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+            
+        return view('employee.notifications', compact('notifications'));
+    }
+
+    /**
+     * Mark notification as read.
+     */
+    public function markRead(Notification $notification)
+    {
+        if ($notification->employee_id != Auth::id()) {
+            abort(403);
+        }
+        
+        $notification->update([
+            'is_read' => true,
+            'read_at' => now()
+        ]);
+        
+        return redirect()->back()->with('success', 'Notification marked as read.');
+    }
+
+    /**
+     * Mark all notifications as read.
+     */
+    public function markAllRead()
+    {
+        Notification::where('employee_id', Auth::id())
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now()
+            ]);
+            
+        return redirect()->back()->with('success', 'All notifications marked as read.');
+    }
+}
